@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>easy money</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --primary-light: #A29BFE;
+            --success: #00B894;
+            --pending: #FDCB6E;
+            --danger: #D63031;
+            --bg: #F0F3F7;
+            --card: #FFFFFF;
+            --text-dark: #2D3436;
+            --text-light: #636E72;
+            --radius: 25px;
+            --shadow: 0 12px 30px rgba(108, 92, 231, 0.12);
+        }
+
+        /* Essential Resets */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); color: var(--text-dark); overflow-x: hidden; }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .loading-text {
+            font-size: 1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Login Layout */
+        #login-screen { 
+            position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary), #5848C2); 
+            z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .login-box { 
+            background: white; width: 100%; max-width: 380px; padding: 45px 30px; 
+            border-radius: var(--radius); text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+        .login-box i { font-size: 3.5rem; color: var(--primary); margin-bottom: 15px; }
+
+        /* App Header */
+        header { 
+            background: var(--primary); padding: 40px 25px 90px; color: white; 
+            border-radius: 0 0 45px 45px; position: relative;
+        }
+        .user-info h2 { font-size: 1.4rem; font-weight: 700; }
+        .user-info p { font-size: 0.8rem; opacity: 0.9; }
+
+        /* Balance Section */
+        .dash-cards { padding: 0 20px; margin-top: -60px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-card { 
+            background: var(--card); padding: 22px 15px; border-radius: var(--radius); 
+            box-shadow: var(--shadow); text-align: center; transition: 0.3s;
+        }
+        .stat-card i { font-size: 1.6rem; margin-bottom: 8px; display: block; }
+        .stat-card b { font-size: 1.2rem; display: block; color: var(--primary); }
+        .stat-card label { font-size: 0.7rem; color: var(--text-light); text-transform: uppercase; font-weight: 600; }
+
+        /* Main Navigation */
+        nav { 
+            position: fixed; bottom: 0; width: 100%; background: white; height: 75px;
+            display: flex; align-items: center; justify-content: space-around;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.05); border-radius: 35px 35px 0 0; z-index: 1000;
+        }
+        .nav-link { text-align: center; color: #B2BEC3; transition: 0.4s; flex: 1; cursor: pointer; }
+        .nav-link.active { color: var(--primary); transform: translateY(-3px); }
+        .nav-link i { font-size: 1.5rem; display: block; }
+        .nav-link span { font-size: 0.7rem; font-weight: 600; margin-top: 4px; display: block; }
+
+        /* Content Pages */
+        .page { display: none; padding: 30px 20px 120px; animation: fadeInUp 0.5s ease both; }
+        .page.active { display: block; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Task Item Cards */
+        .task-item { 
+            background: white; padding: 20px; border-radius: 22px; margin-bottom: 15px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            box-shadow: var(--shadow); border: 1.5px solid transparent; transition: 0.3s;
+        }
+        .task-item:active { transform: scale(0.97); border-color: var(--primary); }
+        .task-meta b { font-size: 1rem; color: var(--text-dark); display: block; }
+        .task-meta span { font-size: 0.85rem; color: var(--primary); font-weight: 700; margin-top: 3px; display: inline-block; }
+        .count-badge { font-size: 0.7rem; background: #F1F2F6; padding: 4px 10px; border-radius: 50px; color: #636E72; font-weight: 700; margin-left: 5px; }
+        .status-tag { font-size: 0.65rem; background: var(--success); color: white; padding: 3px 8px; border-radius: 6px; margin-left: 8px; }
+
+        /* Link Formatting Logic */
+        .desc-text { font-size: 0.85rem; color: #555; line-height: 1.6; }
+        .desc-text a { color: #0984E3; text-decoration: underline; font-weight: 600; word-break: break-all; }
+
+        /* Wallet Design */
+        .billing-box { background: #E8F0FE; padding: 20px; border-radius: 20px; border-left: 5px solid var(--primary); margin-bottom: 20px; }
+        .bill-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; }
+        
+        .input-wrap { margin-bottom: 15px; }
+        .input-wrap label { font-size: 0.8rem; font-weight: 700; color: var(--text-light); margin-bottom: 6px; display: block; }
+        input, select, textarea { 
+            width: 100%; padding: 16px; border-radius: 18px; border: 2px solid #F1F2F6; 
+            font-family: 'Poppins', sans-serif; font-size: 0.9rem; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); background: #fff; }
+
+        .btn-submit { 
+            width: 100%; background: var(--primary); color: white; padding: 18px; 
+            border: none; border-radius: 20px; font-weight: 700; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
+            transition: 0.3s;
+            position: relative;
+        }
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .btn-submit .btn-loading {
+            display: none;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        /* Task Modal */
+        .task-modal { 
+            position: fixed; inset: 0; background: white; z-index: 10001; 
+            display: none; flex-direction: column; overflow-y: auto; padding: 25px;
+        }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .inst-card { background: #FFF9E6; border: 1.5px dashed #FFD93D; padding: 18px; border-radius: 20px; margin-bottom: 25px; }
+
+        .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .photo-input { 
+            aspect-ratio: 1/1; border: 2px dashed #DCDDE1; border-radius: 18px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative; overflow: hidden; background: #FAFAFF;
+        }
+        .photo-input i { font-size: 1.5rem; color: #A4B0BE; margin-bottom: 5px; }
+        .photo-input span { font-size: 0.65rem; color: #A4B0BE; font-weight: 700; }
+        .photo-input img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+        .photo-input input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+        /* History Cards */
+        .hist-card { 
+            background: white; padding: 18px; border-radius: 20px; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow);
+        }
+        .hist-dot { width: 12px; height: 12px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">Processing...</div>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <i class="fas fa-user-shield"></i>
+            <h2 style="margin-bottom: 5px;">Welcome Back</h2>
+            <p style="color: #636E72; font-size: 0.85rem; margin-bottom: 25px;">একটি পাসওয়ার্ড দিয়ে লগইন করো</p>
+            <input type="text" id="userNameInput" placeholder="Enter Full Name">
+            <button class="btn-submit" style="margin-top: 15px;" onclick="doLogin()">
+                <i class="fas fa-sign-in-alt"></i>
+                Get Started
+            </button>
+        </div>
+    </div>
+
+    <div id="main-panel" style="display: none;">
+        <header>
+            <div class="user-info">
+                <p>ওয়েলকাম</p>
+                <h2 id="helloName">User</h2>
+            </div>
+        </header>
+
+        <div class="dash-cards">
+            <div class="stat-card">
+                <i class="fas fa-wallet" style="color: var(--success);"></i>
+                <b id="balReal">৳0.00</b>
+                <label>Real Balance</label>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-history" style="color: var(--pending);"></i>
+                <b id="balWait">৳0.00</b>
+                <label>painting Balance</label>
+            </div>
+        </div>
+
+        <div id="pg-home" class="page active">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">৫ সেকেন্ড ওয়েট করুন অফুরন্ত টাক্স আছে।</h3>
+            <div id="taskContainer">টাক্স আসতেছে অল্প কিছুক্ষণের ভিতরে লোডিং...</div>
+        </div>
+
+        <div id="pg-history" class="page">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Your Submissions</h3>
+            <div id="historyContainer">No work found.</div>
+        </div>
+
+        <div id="pg-wallet" class="page">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Withdraw Earnings</h3>
+            
+            <div class="billing-box">
+                <div class="bill-row"><span>Min Withdrawal:</span> <span id="wMin">৳0</span></div>
+                <div class="bill-row"><span>Service Fee:</span> <span id="wFee" style="color:var(--danger)">৳0</span></div>
+                <div class="bill-row" style="margin-top:8px; padding-top:8px; border-top:1px solid #ccc;">
+                    <span style="color:var(--primary)">Net Payable:</span> <b id="wNet" style="color:var(--success)">৳0.00</b>
+                </div>
+            </div>
+
+            <div class="stat-card" style="text-align: left; padding: 25px;">
+                <div class="input-wrap">
+                    <label>Withdrawal Amount</label>
+                    <input type="number" id="amtInp" placeholder="0.00" oninput="updateNet()">
+                </div>
+                <div class="input-wrap">
+                    <label>Method</label>
+                    <select id="methodInp">
+                        <option value="bkash">bKash Personal</option>
+                        <option value="nagad">Nagad Personal</option>
+                    </select>
+                </div>
+                <div class="input-wrap">
+                    <label>Account Number</label>
+                    <input type="number" id="numInp" placeholder="01XXXXXXXXX">
+                </div>
+                <button class="btn-submit" onclick="requestPayout()" id="cashoutBtn">
+                    <i class="fas fa-check-circle"></i>
+                    Confirm Cashout
+                </button>
+            </div>
+        </div>
+
+        <nav>
+            <div class="nav-link active" onclick="tab('pg-home', this)"><i class="fas fa-th-large"></i><span>Home</span></div>
+            <div class="nav-link" onclick="tab('pg-history', this)"><i class="fas fa-clock"></i><span>History</span></div>
+            <div class="nav-link" onclick="tab('pg-wallet', this)"><i class="fas fa-wallet"></i><span>Wallet</span></div>
+        </nav>
+    </div>
+
+    <div id="modalTask" class="task-modal">
+        <div class="modal-head">
+            <h3 id="mt-name">Submit Task</h3>
+            <i class="fas fa-times-circle" style="font-size: 2rem; color: #eee; cursor: pointer;" onclick="closeModal()"></i>
+        </div>
+        
+        <div class="inst-card">
+            <b style="color: #D35400;"><i class="fas fa-info-circle"></i> Instructions:</b>
+            <div id="mt-desc" class="desc-text" style="margin-top: 8px;"></div>
+        </div>
+
+        <div class="input-wrap">
+            <label>Proof Text (Email / Username)</label>
+            <textarea id="mt-proof" rows="3" placeholder="Enter proof details here..."></textarea>
+        </div>
+
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-light);">Upload Screenshots</label>
+        <div id="mt-ss-grid" class="photo-grid"></div>
+
+        <button class="btn-submit" onclick="submitWork()" id="submitEvidenceBtn">
+            <i class="fas fa-check-circle"></i>
+            Submit Evidence
+        </button>
+    </div>
+
+    <script>
+        // FIREBASE SETUP
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-aGpfiX4YOvtqz3lAj_uhJk5-RWWxRm0",
+            authDomain: "create-f604b.firebaseapp.com",
+            databaseURL: "https://create-f604b-default-rtdb.firebaseio.com",
+            projectId: "create-f604b",
+            storageBucket: "create-f604b.firebasestorage.app",
+            messagingSenderId: "746233650368",
+            appId: "1:746233650368:web:92156beb54cfe674eae125"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let loggedUser = null;
+        let activeTask = null;
+        let screenshots = [];
+        let completedIDs = [];
+        let siteSettings = { min: 0, fee: 0 };
+
+        // Loading Functions
+        function showLoading(message = "Processing...") {
+            document.getElementById('loading-text').textContent = message;
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function showButtonLoading(buttonId, text = "Processing...") {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    ${text}
+                `;
+            }
+        }
+
+        function hideButtonLoading(buttonId, originalText = "", originalIcon = "fas fa-check-circle") {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <i class="${originalIcon}"></i>
+                    ${originalText}
+                `;
+            }
+        }
+
+        window.onload = () => {
+            const cache = localStorage.getItem('micro_session');
+            if(cache) startApp(cache);
+        };
+
+        function doLogin() {
+            const val = document.getElementById('userNameInput').value.trim();
+            if(val.length < 2) return alert("Please enter a valid name");
+            
+            showLoading("Logging in...");
+            setTimeout(() => {
+                localStorage.setItem('micro_session', val);
+                startApp(val);
+                hideLoading();
+            }, 1000);
+        }
+
+        function startApp(name) {
+            loggedUser = name;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-panel').style.display = 'block';
+            document.getElementById('helloName').innerText = name;
+            initSync();
+            
+            // Create user profile if doesn't exist
+            db.ref('users/' + name).once('value', snapshot => {
+                if (!snapshot.exists()) {
+                    db.ref('users/' + name).set({
+                        name: name,
+                        realEarnings: 0,
+                        pendingBalance: 0,
+                        totalWithdrawn: 0,
+                        status: 'active',
+                        joinDate: new Date().toISOString().split('T')[0]
+                    });
+                }
+            });
+        }
+
+        // URL Detection Logic
+        function formatDescription(text) {
+            if(!text) return "No description provided.";
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, (url) => {
+                return `<a href="${url}" target="_blank">${url}</a>`;
+            });
+        }
+
+        function initSync() {
+            // Settings Sync - changed from 'settings' to 'config'
+            db.ref('config').on('value', snap => {
+                const s = snap.val();
+                if(s) {
+                    siteSettings.min = s.minWithdraw || 0;
+                    siteSettings.fee = s.fee || 0;
+                    document.getElementById('wMin').innerText = `৳${siteSettings.min}`;
+                    document.getElementById('wFee').innerText = `৳${siteSettings.fee}`;
+                    updateNet();
+                }
+            });
+
+            // Balance Sync - using same structure as admin panel
+            db.ref('users/' + loggedUser).on('value', snap => {
+                const u = snap.val() || { realEarnings: 0, pendingBalance: 0, totalWithdrawn: 0 };
+                document.getElementById('balReal').innerText = `৳${u.realEarnings?.toFixed(2) || '0.00'}`;
+                document.getElementById('balWait').innerText = `৳${u.pendingBalance?.toFixed(2) || '0.00'}`;
+            });
+
+            // Submission Tracking - using same structure as admin panel
+            db.ref('submissions').orderByChild('user').equalTo(loggedUser).on('value', snap => {
+                const data = snap.val();
+                completedIDs = data ? Object.values(data).map(x => x.taskID) : [];
+                renderHistory(data);
+                loadTasks();
+            });
+
+            db.ref('submissions').on('value', () => loadTasks());
+        }
+
+        async function loadTasks() {
+            const tSnap = await db.ref('tasks').once('value');
+            const sSnap = await db.ref('submissions').once('value');
+            const tasks = tSnap.val();
+            const allSubs = sSnap.val() ? Object.values(sSnap.val()) : [];
+            
+            const list = document.getElementById('taskContainer');
+            list.innerHTML = "";
+
+            if(!tasks) return list.innerHTML = "No tasks available.";
+
+            for(let id in tasks) {
+                const t = tasks[id];
+                if(!t.title && !t.name) continue; // Support both title and name fields
+
+                const doneCount = allSubs.filter(s => s.taskID === id).length;
+                const isDone = completedIDs.includes(id);
+                const remaining = (t.limit || 0) - doneCount;
+                
+                // Use title from admin panel or name from old structure
+                const taskName = t.title || t.name;
+                const taskPrice = t.price || 0;
+                const taskScreenshots = t.screenshots || 1;
+                const taskDesc = t.description || t.desc || "";
+
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                    <div class="task-meta">
+                        <b>${taskName} <span class="count-badge">${doneCount}/${t.limit || 0}</span></b>
+                        <span>Reward: ৳${taskPrice} ${isDone ? '<span class="status-tag">DONE</span>' : ''}</span>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#DCDDE1"></i>
+                `;
+
+                div.onclick = () => {
+                    if(isDone) alert("You already finished this task!");
+                    else if(doneCount >= t.limit) alert("Task limit reached!");
+                    else openTask({
+                        name: taskName,
+                        price: taskPrice,
+                        screenshots: taskScreenshots,
+                        desc: taskDesc,
+                        limit: t.limit
+                    }, id);
+                };
+                list.appendChild(div);
+            }
+        }
+
+        function openTask(t, id) {
+            activeTask = { ...t, id };
+            document.getElementById('mt-name').innerText = t.name;
+            document.getElementById('mt-desc').innerHTML = formatDescription(t.desc);
+            document.getElementById('mt-proof').value = "";
+            screenshots = [];
+            
+            const grid = document.getElementById('mt-ss-grid');
+            grid.innerHTML = "";
+            const count = t.screenshots || 1;
+
+            for(let i=0; i<count; i++) {
+                grid.innerHTML += `
+                    <div class="photo-input">
+                        <i class="fas fa-image"></i>
+                        <span>SS ${i+1}</span>
+                        <input type="file" accept="image/*" onchange="handleImg(this, ${i})">
+                        <img id="view-ss${i}">
+                    </div>`;
+            }
+            document.getElementById('modalTask').style.display = 'flex';
+        }
+
+        function handleImg(inp, i) {
+            const fr = new FileReader();
+            fr.onload = e => {
+                const img = document.getElementById('view-ss' + i);
+                img.src = e.target.result;
+                img.style.display = 'block';
+                screenshots[i] = e.target.result;
+            };
+            fr.readAsDataURL(inp.files[0]);
+        }
+
+        function submitWork() {
+            const txt = document.getElementById('mt-proof').value.trim();
+            const req = activeTask.screenshots || 1;
+            if(!txt || screenshots.filter(x => x).length < req) return alert("Please fill all proofs!");
+
+            // Show loading on submit button
+            showButtonLoading('submitEvidenceBtn', 'Submitting...');
+            
+            const obj = {
+                user: loggedUser,
+                taskID: activeTask.id,
+                taskName: activeTask.name,
+                price: activeTask.price,
+                proofText: txt,
+                screenshots: screenshots,
+                status: 'pending',
+                timestamp: Date.now()
+            };
+
+            db.ref('submissions').push(obj).then(() => {
+                // Update user's pending balance - using same structure as admin panel
+                db.ref(`users/${loggedUser}`).transaction(user => {
+                    if (!user) user = { realEarnings: 0, pendingBalance: 0, totalWithdrawn: 0 };
+                    user.pendingBalance = (user.pendingBalance || 0) + activeTask.price;
+                    return user;
+                }).then(() => {
+                    // Show success and reset
+                    setTimeout(() => {
+                        hideButtonLoading('submitEvidenceBtn', 'Submit Evidence', 'fas fa-check-circle');
+                        alert("Submitted! Wait for admin approval.");
+                        closeModal();
+                    }, 500);
+                });
+            }).catch(error => {
+                hideButtonLoading('submitEvidenceBtn', 'Submit Evidence', 'fas fa-check-circle');
+                alert("Error: " + error.message);
+            });
+        }
+
+        function renderHistory(data) {
+            const box = document.getElementById('historyContainer');
+            box.innerHTML = "";
+            if(!data) return box.innerHTML = "<p style='text-align:center;color:#999;'>No history yet.</p>";
+            
+            Object.values(data).reverse().forEach(s => {
+                const c = s.status === 'pending' ? 'var(--pending)' : (s.status === 'approved' ? 'var(--success)' : 'var(--danger)');
+                box.innerHTML += `
+                    <div class="hist-card">
+                        <div class="hist-dot" style="background:${c}"></div>
+                        <div style="flex:1">
+                            <b style="font-size:0.9rem">${s.taskName}</b>
+                            <p style="font-size:0.7rem; color:#A4B0BE;">${new Date(s.timestamp || s.date).toLocaleDateString()} - ${s.status?.toUpperCase() || 'PENDING'}</p>
+                        </div>
+                        <div style="font-weight:700;">৳${s.price}</div>
+                    </div>`;
+            });
+        }
+
+        function updateNet() {
+            const a = parseFloat(document.getElementById('amtInp').value) || 0;
+            const n = a > siteSettings.fee ? a - siteSettings.fee : 0;
+            document.getElementById('wNet').innerText = `৳${n.toFixed(2)}`;
+        }
+
+        function requestPayout() {
+            const a = parseFloat(document.getElementById('amtInp').value);
+            const n = document.getElementById('numInp').value;
+            if(!a || a < siteSettings.min) return alert(`Minimum withdraw ৳${siteSettings.min}`);
+            if(n.length < 10) return alert("Enter valid account number");
+
+            // Show loading on cashout button
+            showButtonLoading('cashoutBtn', 'Processing...');
+
+            db.ref('users/' + loggedUser).once('value', s => {
+                const userData = s.val() || { realEarnings: 0, pendingBalance: 0, totalWithdrawn: 0 };
+                const bal = userData.realEarnings || 0;
+                if(a > bal) {
+                    hideButtonLoading('cashoutBtn', 'Confirm Cashout', 'fas fa-check-circle');
+                    return alert("Insufficient balance!");
+                }
+
+                // Update user balance
+                db.ref('users/' + loggedUser).update({ 
+                    realEarnings: bal - a 
+                }).then(() => {
+                    // Create withdrawal request - using same structure as admin panel
+                    db.ref('withdrawals').push({
+                        user: loggedUser, 
+                        amount: a, 
+                        fee: siteSettings.fee,
+                        net: a - siteSettings.fee, 
+                        method: document.getElementById('methodInp').value,
+                        phone: n, 
+                        status: 'pending', 
+                        timestamp: Date.now()
+                    }).then(() => {
+                        // Show success and reset
+                        setTimeout(() => {
+                            hideButtonLoading('cashoutBtn', 'Confirm Cashout', 'fas fa-check-circle');
+                            alert("Payout request sent!");
+                            document.getElementById('amtInp').value = "";
+                            updateNet();
+                        }, 500);
+                    }).catch(error => {
+                        hideButtonLoading('cashoutBtn', 'Confirm Cashout', 'fas fa-check-circle');
+                        alert("Error: " + error.message);
+                    });
+                }).catch(error => {
+                    hideButtonLoading('cashoutBtn', 'Confirm Cashout', 'fas fa-check-circle');
+                    alert("Error: " + error.message);
+                });
+            }).catch(error => {
+                hideButtonLoading('cashoutBtn', 'Confirm Cashout', 'fas fa-check-circle');
+                alert("Error: " + error.message);
+            });
+        }
+
+        function closeModal() { 
+            document.getElementById('modalTask').style.display = 'none'; 
+            screenshots = [];
+            // Reset submit button
+            hideButtonLoading('submitEvidenceBtn', 'Submit Evidence', 'fas fa-check-circle');
+        }
+        
+        function tab(id, el) {
+            document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+        }
+    </script>
+</body>
+</html>

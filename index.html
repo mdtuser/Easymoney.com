@@ -30,6 +30,76 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Poppins', sans-serif; background-color: var(--bg); color: var(--text-dark); overflow-x: hidden; }
 
+        /* WhatsApp Floating Button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 85px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3);
+            z-index: 999;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(37, 211, 102, 0.4);
+        }
+        
+        .whatsapp-float i {
+            color: white;
+            font-size: 28px;
+        }
+        
+        .whatsapp-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(37, 211, 102, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .whatsapp-notification {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #FF6B6B;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
         /* Loading Overlay */
         #loading-overlay {
             position: fixed;
@@ -181,6 +251,13 @@
 </head>
 <body>
 
+    <!-- WhatsApp Floating Button -->
+    <div class="whatsapp-float" onclick="openWhatsApp()">
+        <div class="whatsapp-pulse"></div>
+        <i class="fab fa-whatsapp"></i>
+        <div class="whatsapp-notification"></div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loading-overlay">
         <div class="loading-spinner"></div>
@@ -190,9 +267,9 @@
     <div id="login-screen">
         <div class="login-box">
             <i class="fas fa-user-shield"></i>
-            <h2 style="margin-bottom: 5px;">Welcome Back</h2>
-            <p style="color: #636E72; font-size: 0.85rem; margin-bottom: 25px;">একটি পাসওয়ার্ড দিয়ে লগইন করো</p>
-            <input type="text" id="userNameInput" placeholder="Enter Full Name">
+            <h2 style="margin-bottom: 5px;">Welcome new user</h2>
+            <p style="color: #636E72; font-size: 0.85rem; margin-bottom: 25px;">👉}একটি পাসওয়ার্ড দিয়ে লগইন করুন📌 পাসওয়ার্ড কাউকে শেয়ার করবেন না ❌</p>
+            <input type="text" id="userNameInput" placeholder="Enter your password">
             <button class="btn-submit" style="margin-top: 15px;" onclick="doLogin()">
                 <i class="fas fa-sign-in-alt"></i>
                 Get Started
@@ -203,7 +280,7 @@
     <div id="main-panel" style="display: none;">
         <header>
             <div class="user-info">
-                <p>ওয়েলকাম</p>
+                <p>👉আসসালামু আলাইকুম👈আপনারা যদি কোন টাক্স দিতে চান কম বাজেটে তাহলে দিতে পারেন নিচে মেসেজে ক্লিক করুন। যে কোন প্রয়োজনে যোগাযোগ করুন। আপনারা যদি সেম টু সেম অ্যাপটি কিনতে চান 500-1000 ভিতরে কিনতে পারেন। আপনাদের জন্য ডিসকাউন্ট 65% ভালোভাবে এবং সৎভাবে কাজ করবে তোমরা শুভকামনা রইল।</p>
                 <h2 id="helloName">User</h2>
             </div>
         </header>
@@ -212,23 +289,22 @@
             <div class="stat-card">
                 <i class="fas fa-wallet" style="color: var(--success);"></i>
                 <b id="balReal">৳0.00</b>
-                <label>Real Balance</label>
+                <label>Available</label>
             </div>
             <div class="stat-card">
                 <i class="fas fa-history" style="color: var(--pending);"></i>
                 <b id="balWait">৳0.00</b>
-                <label>painting Balance</label>
+                <label>Reviewing</label>
             </div>
-        </div>
-
-        <div id="pg-home" class="page active">
-            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">৫ সেকেন্ড ওয়েট করুন অফুরন্ত টাক্স আছে।</h3>
-            <div id="taskContainer">টাক্স আসতেছে অল্প কিছুক্ষণের ভিতরে লোডিং...</div>
+        </div
+div id="pg-home" class="page active">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">ওয়েট করুন টাক্স আসতেছে ৭ সেকেন্ড ভিতরে। </h3>
+            <div id="taskContainer">👉পরে নিন👈প্রতিদিন ৩০০ থেকে ১০০০ টাকা ইনকামের সুযোগ নিয়ে এলো easy money কোন সমস্যা হলে মেসেজ বাটনে ক্লিক করে যোগাযোগ করুন আপনারা যদি ট্যাক্স দিতে চান তাহলে যোগাযোগ করতে পারেন।</div>
         </div>
 
         <div id="pg-history" class="page">
             <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Your Submissions</h3>
-            <div id="historyContainer">No work found.</div>
+            <div id="historyContainer">১০ থেকে ২০ মিনিটের ভিতর টাক্স আসবে বর্তমানে টাক্স নাই.</div>
         </div>
 
         <div id="pg-wallet" class="page">
@@ -317,6 +393,18 @@
         let screenshots = [];
         let completedIDs = [];
         let siteSettings = { min: 0, fee: 0 };
+
+        // WhatsApp Function
+        function openWhatsApp() {
+            // The WhatsApp QR link you provided
+            const whatsappURL = "https://wa.me/qr/3NNXOBZFADXDM1";
+            
+            // Open in new tab
+            window.open(whatsappURL, '_blank');
+            
+            // Optional: Show confirmation message
+            alert("Opening WhatsApp support. Please send your query there.");
+        }
 
         // Loading Functions
         function showLoading(message = "Processing...") {
@@ -484,6 +572,7 @@
         function openTask(t, id) {
             activeTask = { ...t, id };
             document.getElementById('mt-name').innerText = t.name;
+            // Link formatting applies here
             document.getElementById('mt-desc').innerHTML = formatDescription(t.desc);
             document.getElementById('mt-proof').value = "";
             screenshots = [];
@@ -507,7 +596,7 @@
         function handleImg(inp, i) {
             const fr = new FileReader();
             fr.onload = e => {
-                const img = document.getElementById('view-ss' + i);
+const img = document.getElementById('view-ss' + i);
                 img.src = e.target.result;
                 img.style.display = 'block';
                 screenshots[i] = e.target.result;
